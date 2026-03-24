@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BASE DEPLOYER</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+
+:root {
+–bg: #0a0a0f;
+–surface: #111118;
+–border: #1e1e2e;
+–accent: #0052ff;
+–accent2: #00d4aa;
+–text: #e8e8f0;
+–muted: #555570;
+–danger: #ff4466;
+}
+
+- { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+background: var(–bg);
+color: var(–text);
+font-family: ‘Space Mono’, monospace;
+min-height: 100vh;
+overflow-x: hidden;
+}
+
+/* Grid background */
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+background-image:
+linear-gradient(rgba(0,82,255,0.04) 1px, transparent 1px),
+linear-gradient(90deg, rgba(0,82,255,0.04) 1px, transparent 1px);
+background-size: 40px 40px;
+pointer-events: none;
+z-index: 0;
+}
+
+.glow {
+position: fixed;
+width: 600px; height: 600px;
+border-radius: 50%;
+background: radial-gradient(circle, rgba(0,82,255,0.12) 0%, transparent 70%);
+top: -200px; left: -200px;
+pointer-events: none;
+animation: driftGlow 12s ease-in-out infinite alternate;
+}
+.glow2 {
+background: radial-gradient(circle, rgba(0,212,170,0.08) 0%, transparent 70%);
+top: auto; left: auto;
+bottom: -200px; right: -200px;
+animation-delay: -6s;
+}
+
+@keyframes driftGlow {
+from { transform: translate(0,0); }
+to { transform: translate(80px, 60px); }
+}
+
+.container {
+position: relative;
+z-index: 1;
+max-width: 680px;
+margin: 0 auto;
+padding: 60px 24px 80px;
+}
+
+header {
+margin-bottom: 56px;
+animation: fadeUp 0.6s ease both;
+}
+
+.logo {
+display: flex;
+align-items: center;
+gap: 12px;
+margin-bottom: 16px;
+}
+
+.logo-mark {
+width: 36px; height: 36px;
+background: var(–accent);
+border-radius: 8px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-family: ‘Syne’, sans-serif;
+font-weight: 800;
+font-size: 18px;
+color: white;
+box-shadow: 0 0 20px rgba(0,82,255,0.4);
+}
+
+.logo-text {
+font-family: ‘Syne’, sans-serif;
+font-weight: 800;
+font-size: 14px;
+letter-spacing: 0.15em;
+text-transform: uppercase;
+color: var(–muted);
+}
+
+h1 {
+font-family: ‘Syne’, sans-serif;
+font-weight: 800;
+font-size: clamp(32px, 6vw, 52px);
+line-height: 1.05;
+letter-spacing: -0.02em;
+}
+
+h1 span { color: var(–accent); }
+
+.subtitle {
+margin-top: 12px;
+color: var(–muted);
+font-size: 13px;
+line-height: 1.7;
+}
+
+/* Card */
+.card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 16px;
+overflow: hidden;
+animation: fadeUp 0.6s ease both;
+}
+
+.card + .card { margin-top: 16px; }
+.card:nth-child(2) { animation-delay: 0.1s; }
+.card:nth-child(3) { animation-delay: 0.2s; }
+
+.card-header {
+padding: 20px 24px;
+border-bottom: 1px solid var(–border);
+display: flex;
+align-items: center;
+gap: 10px;
+}
+
+.step-num {
+width: 24px; height: 24px;
+border-radius: 50%;
+background: rgba(0,82,255,0.15);
+border: 1px solid rgba(0,82,255,0.3);
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 11px;
+font-weight: 700;
+color: var(–accent);
+flex-shrink: 0;
+}
+
+.card-title {
+font-family: ‘Syne’, sans-serif;
+font-weight: 700;
+font-size: 14px;
+letter-spacing: 0.05em;
+text-transform: uppercase;
+}
+
+.card-body { padding: 24px; }
+
+/* Wallet section */
+.wallet-status {
+display: flex;
+align-items: center;
+gap: 10px;
+padding: 14px 16px;
+background: rgba(0,0,0,0.3);
+border-radius: 10px;
+border: 1px solid var(–border);
+margin-bottom: 16px;
+font-size: 13px;
+}
+
+.dot {
+width: 8px; height: 8px;
+border-radius: 50%;
+background: var(–muted);
+flex-shrink: 0;
+transition: background 0.3s;
+}
+.dot.connected { background: var(–accent2); box-shadow: 0 0 8px var(–accent2); }
+
+.wallet-addr {
+color: var(–muted);
+font-size: 12px;
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+}
+
+.network-badge {
+margin-left: auto;
+padding: 3px 10px;
+border-radius: 20px;
+background: rgba(0,82,255,0.15);
+border: 1px solid rgba(0,82,255,0.25);
+font-size: 11px;
+color: var(–accent);
+white-space: nowrap;
+}
+
+/* Buttons */
+.btn {
+width: 100%;
+padding: 14px 20px;
+border-radius: 10px;
+border: none;
+cursor: pointer;
+font-family: ‘Space Mono’, monospace;
+font-size: 13px;
+font-weight: 700;
+letter-spacing: 0.05em;
+transition: all 0.2s;
+position: relative;
+overflow: hidden;
+}
+
+.btn::after {
+content: ‘’;
+position: absolute;
+inset: 0;
+background: white;
+opacity: 0;
+transition: opacity 0.15s;
+}
+
+.btn:active::after { opacity: 0.06; }
+
+.btn-primary {
+background: var(–accent);
+color: white;
+box-shadow: 0 4px 20px rgba(0,82,255,0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+background: #0047e0;
+box-shadow: 0 4px 28px rgba(0,82,255,0.5);
+transform: translateY(-1px);
+}
+
+.btn-secondary {
+background: transparent;
+color: var(–text);
+border: 1px solid var(–border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+border-color: var(–accent);
+color: var(–accent);
+}
+
+.btn:disabled {
+opacity: 0.35;
+cursor: not-allowed;
+transform: none !important;
+}
+
+/* Contract selector */
+.contract-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 10px;
+margin-bottom: 16px;
+}
+
+.contract-option {
+padding: 14px;
+border-radius: 10px;
+border: 1px solid var(–border);
+cursor: pointer;
+transition: all 0.2s;
+background: transparent;
+text-align: left;
+}
+
+.contract-option:hover {
+border-color: rgba(0,82,255,0.4);
+background: rgba(0,82,255,0.05);
+}
+
+.contract-option.selected {
+border-color: var(–accent);
+background: rgba(0,82,255,0.1);
+}
+
+.contract-option .co-name {
+font-family: ‘Syne’, sans-serif;
+font-weight: 700;
+font-size: 13px;
+margin-bottom: 4px;
+color: var(–text);
+}
+
+.contract-option.selected .co-name { color: var(–accent); }
+
+.contract-option .co-desc {
+font-size: 11px;
+color: var(–muted);
+line-height: 1.5;
+}
+
+/* Code preview */
+.code-preview {
+background: #080810;
+border: 1px solid var(–border);
+border-radius: 10px;
+padding: 16px;
+font-size: 11px;
+line-height: 1.8;
+color: #8888aa;
+overflow-x: auto;
+margin-bottom: 16px;
+max-height: 160px;
+overflow-y: auto;
+}
+
+.code-preview .kw { color: #7c9fff; }
+.code-preview .str { color: var(–accent2); }
+.code-preview .fn { color: #ffcc66; }
+.code-preview .cm { color: #44445a; }
+
+/* Log */
+.log {
+background: #060609;
+border: 1px solid var(–border);
+border-radius: 10px;
+padding: 16px;
+font-size: 11px;
+line-height: 1.8;
+min-height: 80px;
+max-height: 200px;
+overflow-y: auto;
+color: var(–muted);
+display: none;
+}
+
+.log.visible { display: block; }
+
+.log-line { margin-bottom: 2px; }
+.log-line.ok { color: var(–accent2); }
+.log-line.err { color: var(–danger); }
+.log-line.info { color: #7c9fff; }
+
+/* Result */
+.result-box {
+display: none;
+margin-top: 16px;
+padding: 16px;
+background: rgba(0,212,170,0.05);
+border: 1px solid rgba(0,212,170,0.2);
+border-radius: 10px;
+}
+.result-box.visible { display: block; }
+.result-label { font-size: 11px; color: var(–muted); margin-bottom: 4px; }
+.result-addr {
+font-size: 12px;
+color: var(–accent2);
+word-break: break-all;
+margin-bottom: 10px;
+}
+.result-link {
+font-size: 12px;
+color: var(–accent);
+text-decoration: none;
+}
+.result-link:hover { text-decoration: underline; }
+
+@keyframes fadeUp {
+from { opacity: 0; transform: translateY(20px); }
+to { opacity: 1; transform: translateY(0); }
+}
+
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+display: inline-block;
+width: 12px; height: 12px;
+border: 2px solid rgba(255,255,255,0.2);
+border-top-color: white;
+border-radius: 50%;
+animation: spin 0.6s linear infinite;
+vertical-align: middle;
+margin-right: 8px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(–border); border-radius: 2px; }
+</style>
+
+</head>
+<body>
+<div class="glow"></div>
+<div class="glow glow2"></div>
+
+<div class="container">
+  <header>
+    <div class="logo">
+      <div class="logo-mark">B</div>
+      <div class="logo-text">Base Network</div>
+    </div>
+    <h1>Contract<br><span>Deployer</span></h1>
+    <p class="subtitle">Connect your wallet and deploy a smart contract<br>on Base mainnet or testnet in seconds.</p>
+  </header>
+
+  <!-- Step 1: Connect Wallet -->
+
+  <div class="card">
+    <div class="card-header">
+      <div class="step-num">1</div>
+      <div class="card-title">Connect Wallet</div>
+    </div>
+    <div class="card-body">
+      <div class="wallet-status" id="walletStatus">
+        <div class="dot" id="walletDot"></div>
+        <div class="wallet-addr" id="walletAddr">No wallet connected</div>
+        <div class="network-badge" id="networkBadge">Base</div>
+      </div>
+      <button class="btn btn-primary" id="connectBtn" onclick="connectWallet()">Connect Wallet</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Choose Contract -->
+
+  <div class="card">
+    <div class="card-header">
+      <div class="step-num">2</div>
+      <div class="card-title">Choose Contract</div>
+    </div>
+    <div class="card-body">
+      <div class="contract-grid">
+        <div class="contract-option selected" onclick="selectContract('counter')" id="opt-counter">
+          <div class="co-name">Counter</div>
+          <div class="co-desc">Simple on-chain counter with increment/decrement.</div>
+        </div>
+        <div class="contract-option" onclick="selectContract('store')" id="opt-store">
+          <div class="co-name">Key-Value Store</div>
+          <div class="co-desc">Store and retrieve string values by key.</div>
+        </div>
+        <div class="contract-option" onclick="selectContract('greeter')" id="opt-greeter">
+          <div class="co-name">Greeter</div>
+          <div class="co-desc">Store a greeting message on-chain.</div>
+        </div>
+        <div class="contract-option" onclick="selectContract('token')" id="opt-token">
+          <div class="co-name">Mini Token</div>
+          <div class="co-desc">Minimal ERC-20-like token contract.</div>
+        </div>
+      </div>
+
+```
+  <div class="code-preview" id="codePreview"></div>
+</div>
+```
+
+  </div>
+
+  <!-- Step 3: Deploy -->
+
+  <div class="card">
+    <div class="card-header">
+      <div class="step-num">3</div>
+      <div class="card-title">Deploy</div>
+    </div>
+    <div class="card-body">
+      <button class="btn btn-primary" id="deployBtn" onclick="deploy()" disabled>Deploy to Base</button>
+
+```
+  <div class="log" id="deployLog"></div>
+
+  <div class="result-box" id="resultBox">
+    <div class="result-label">CONTRACT DEPLOYED AT</div>
+    <div class="result-addr" id="resultAddr"></div>
+    <a class="result-link" id="resultLink" href="#" target="_blank">View on Basescan ↗</a>
+  </div>
+</div>
+```
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.9.0/ethers.umd.min.js"></script>
+
+<script>
+  let provider, signer, selectedContract = 'counter';
+
+  const CONTRACTS = {
+    counter: {
+      name: 'Counter',
+      code: `<span class="cm">// SPDX-License-Identifier: MIT</span>
+<span class="kw">pragma solidity</span> ^0.8.0;
+
+<span class="kw">contract</span> <span class="fn">Counter</span> {
+    <span class="kw">uint256 public</span> count;
+    
+    <span class="kw">function</span> <span class="fn">increment</span>() <span class="kw">external</span> {
+        count++;
+    }
+    <span class="kw">function</span> <span class="fn">decrement</span>() <span class="kw">external</span> {
+        <span class="kw">require</span>(count > 0, <span class="str">"underflow"</span>);
+        count--;
+    }
+}`,
+      bytecode: '0x6080604052348015600e575f80fd5b5060d58061001b5f395ff3fe6080604052348015600e575f80fd5b50600436106030575f3560e01c8063372016831460345780636d4ce63c14604e575b5f80fd5b603a6068565b005b60546081565b60405190815260200160405180910390f35b5f8054605f9060a5565b9055565b5f5490565b634e487b7160e01b5f52601160045260245ffd60815b6001905f820316111560b5576084565b9390505056fea264697066735822'
+    },
+    greeter: {
+      name: 'Greeter',
+      code: `<span class="cm">// SPDX-License-Identifier: MIT</span>
+<span class="kw">pragma solidity</span> ^0.8.0;
+
+<span class="kw">contract</span> <span class="fn">Greeter</span> {
+    <span class="kw">string public</span> greeting;
+    
+    <span class="kw">constructor</span>(<span class="kw">string memory</span> _msg) {
+        greeting = _msg;
+    }
+    <span class="kw">function</span> <span class="fn">setGreeting</span>(<span class="kw">string memory</span> _msg) <span class="kw">external</span> {
+        greeting = _msg;
+    }
+}`,
+      bytecode: '0x60806040523480156200001157600080fd5b506040516200066038038062000660833981016040819052620000349162000114565b8051620000499060009060208401906200005e565b505062000201565b8280546200006c90620001c4565b90600052602060002090601f016020900481019282620000905760008555620000db565b82601f10620000ab57805160ff1916838001178555620000db565b82800160010185558215620000db579182015b82811115620000db578251825591602001919060010190620000be565b50620000e9929150620000ed565b5090565b5b80821115620000e95760008155600101620000ee565b634e487b7160e01b600052604160045260246000fd5b600060208284031215620001275760008082fd5b81516001600160401b03808211156200013f57600080fd5b818401915084601f8301126200015457600080fd5b815181811115620001695762000169620001040000565b604051601f8201601f19908116603f011681019083821181831017156200019257620001926200010000565b816040528281526020935087848487010111156200015257600080fd5b600081840152509392505050565b600181811c90821680620001d957607f821691505b602082108103620001fa57634e487b7160e01b600052602260045260246000fd5b50919050565b61044f80620002116000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c8063a41368621461003b578063fe50cc7214610050575b600080fd5b61004e6100493660046102db565b61006e565b005b610058610081565b604051610065919061034c565b60405180910390f35b805161008190600090602084019061010f565b5056fe'
+    },
+    store: {
+      name: 'Key-Value Store',
+      code: `<span class="cm">// SPDX-License-Identifier: MIT</span>
+<span class="kw">pragma solidity</span> ^0.8.0;
+
+<span class="kw">contract</span> <span class="fn">KVStore</span> {
+    <span class="kw">mapping</span>(<span class="kw">string</span> => <span class="kw">string</span>) <span class="kw">private</span> store;
+    
+    <span class="kw">function</span> <span class="fn">set</span>(<span class="kw">string calldata</span> k, <span class="kw">string calldata</span> v) <span class="kw">external</span> {
+        store[k] = v;
+    }
+    <span class="kw">function</span> <span class="fn">get</span>(<span class="kw">string calldata</span> k) <span class="kw">external view returns</span> (<span class="kw">string memory</span>) {
+        <span class="kw">return</span> store[k];
+    }
+}`,
+      bytecode: '0x608060405234801561001057600080fd5b5061044e806100206000396000f3fe608060405234801561001057600080fd5b50600436106100365760003560e01c80634ef682831461003b578063693ec85e14610050575b600080fd5b61004e610049366004610201565b61006e565b005b61005861007f565b604051610065919061028a565b60405180910390f35b81516100819060009060208401906100b3565b5056fe'
+    },
+    token: {
+      name: 'Mini Token',
+      code: `<span class="cm">// SPDX-License-Identifier: MIT</span>
+<span class="kw">pragma solidity</span> ^0.8.0;
+
+<span class="kw">contract</span> <span class="fn">MiniToken</span> {
+    <span class="kw">string public</span> name = <span class="str">"MiniToken"</span>;
+    <span class="kw">string public</span> symbol = <span class="str">"MTK"</span>;
+    <span class="kw">uint8 public</span> decimals = 18;
+    <span class="kw">mapping</span>(<span class="kw">address</span> => <span class="kw">uint256</span>) <span class="kw">public</span> balanceOf;
+    
+    <span class="kw">constructor</span>() {
+        balanceOf[msg.sender] = 1_000_000 * 10**18;
+    }
+}`,
+      bytecode: '0x60806040526040518060400160405280600981526020017f4d696e69546f6b656e0000000000000000000000000000000000000000000000815250600090816200004a91906200034d565b506040518060400160405280600381526020017f4d544b00000000000000000000000000000000000000000000000000000000008152506001908162000090919062000034d565b506012600255348015620000a357600080fd5b506b033b2e3c9fd0803ce8000000600360003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020819055506200043a565b'
+    }
+  };
+
+  function selectContract(id) {
+    selectedContract = id;
+    document.querySelectorAll('.contract-option').forEach(el => el.classList.remove('selected'));
+    document.getElementById('opt-' + id).classList.add('selected');
+    document.getElementById('codePreview').innerHTML = CONTRACTS[id].code;
+  }
+
+  // Init code preview
+  selectContract('counter');
+
+  async function connectWallet() {
+    const btn = document.getElementById('connectBtn');
+
+    if (typeof window.ethereum === 'undefined') {
+      logLine('No wallet detected. Install MetaMask or a Web3 wallet.', 'err');
+      showLog();
+      return;
+    }
+
+    btn.innerHTML = '<span class="spinner"></span>Connecting...';
+    btn.disabled = true;
+
+    try {
+      provider = new ethers.BrowserProvider(window.ethereum);
+      const accounts = await provider.send('eth_requestAccounts', []);
+      signer = await provider.getSigner();
+
+      const addr = accounts[0];
+      const network = await provider.getNetwork();
+
+      // Try to switch to Base mainnet (chainId 8453)
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x2105' }],
+        });
+      } catch (switchErr) {
+        if (switchErr.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x2105',
+              chainName: 'Base',
+              nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+              rpcUrls: ['https://mainnet.base.org'],
+              blockExplorerUrls: ['https://basescan.org'],
+            }],
+          });
+        }
+      }
+
+      // Refresh after switch
+      provider = new ethers.BrowserProvider(window.ethereum);
+      signer = await provider.getSigner();
+      const net = await provider.getNetwork();
+
+      document.getElementById('walletDot').classList.add('connected');
+      document.getElementById('walletAddr').textContent = addr.slice(0,6) + '...' + addr.slice(-4);
+      document.getElementById('networkBadge').textContent =
+        net.chainId === 8453n ? 'Base Mainnet' :
+        net.chainId === 84532n ? 'Base Sepolia' :
+        'Chain ' + net.chainId;
+
+      btn.textContent = '✓ Connected';
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-secondary');
+
+      document.getElementById('deployBtn').disabled = false;
+
+    } catch (e) {
+      btn.textContent = 'Connect Wallet';
+      btn.disabled = false;
+      alert('Connection failed: ' + (e.message || e));
+    }
+  }
+
+  function showLog() {
+    document.getElementById('deployLog').classList.add('visible');
+  }
+
+  function logLine(msg, type = '') {
+    showLog();
+    const log = document.getElementById('deployLog');
+    const line = document.createElement('div');
+    line.className = 'log-line' + (type ? ' ' + type : '');
+    const time = new Date().toLocaleTimeString('en', { hour12: false });
+    line.textContent = `[${time}] ${msg}`;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  async function deploy() {
+    const btn = document.getElementById('deployBtn');
+    const contract = CONTRACTS[selectedContract];
+
+    document.getElementById('resultBox').classList.remove('visible');
+    document.getElementById('deployLog').innerHTML = '';
+    showLog();
+
+    btn.innerHTML = '<span class="spinner"></span>Deploying...';
+    btn.disabled = true;
+
+    try {
+      logLine(`Preparing ${contract.name} contract...`, 'info');
+
+      const net = await provider.getNetwork();
+      const isBase = net.chainId === 8453n || net.chainId === 84532n;
+      if (!isBase) {
+        logLine('Please switch to Base network first.', 'err');
+        btn.textContent = 'Deploy to Base';
+        btn.disabled = false;
+        return;
+      }
+
+      logLine('Estimating gas...', 'info');
+
+      // Build transaction
+      const tx = await signer.sendTransaction({
+        data: contract.bytecode,
+      });
+
+      logLine('Transaction sent: ' + tx.hash.slice(0,12) + '...', 'info');
+      logLine('Waiting for confirmation...', 'info');
+
+      const receipt = await tx.wait();
+      const deployed = receipt.contractAddress;
+
+      logLine('Contract deployed successfully!', 'ok');
+      logLine('Address: ' + deployed, 'ok');
+
+      document.getElementById('resultAddr').textContent = deployed;
+      const explorer = net.chainId === 8453n ? 'https://basescan.org' : 'https://sepolia.basescan.org';
+      const link = document.getElementById('resultLink');
+      link.href = `${explorer}/address/${deployed}`;
+      document.getElementById('resultBox').classList.add('visible');
+
+      btn.textContent = '✓ Deployed';
+
+    } catch (e) {
+      logLine('Error: ' + (e.reason || e.message || 'Unknown error'), 'err');
+      btn.textContent = 'Deploy to Base';
+      btn.disabled = false;
+    }
+  }
+</script>
+
+</body>
+</html>
