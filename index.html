@@ -473,9 +473,22 @@ margin-right: 8px;
       <div class="card-title">Deploy</div>
     </div>
     <div class="card-body">
-      <button class="btn btn-primary" id="deployBtn" onclick="deploy()" disabled>Deploy to Base</button>
+      <div style="display:flex;gap:10px;margin-bottom:0">
+        <button class="btn btn-secondary" id="deployBtn" onclick="deploy(1)" disabled style="width:auto;flex:1">Deploy 1</button>
+        <button class="btn btn-primary" id="deploy100Btn" onclick="deploy(100)" disabled style="width:auto;flex:2">🚀 Deploy 100 Contracts</button>
+      </div>
 
 ```
+  <div id="progressWrap" style="display:none;margin-top:16px">
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px">
+      <span>Progress</span>
+      <span id="progressLabel">0 / 100</span>
+    </div>
+    <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+      <div id="progressBar" style="height:100%;width:0%;background:var(--accent);border-radius:3px;transition:width 0.3s"></div>
+    </div>
+  </div>
+
   <div class="log" id="deployLog"></div>
 
   <div class="result-box" id="resultBox">
@@ -634,6 +647,7 @@ margin-right: 8px;
       btn.classList.add('btn-secondary');
 
       document.getElementById('deployBtn').disabled = false;
+      document.getElementById('deploy100Btn').disabled = false;
 
     } catch (e) {
       btn.textContent = 'Connect Wallet';
@@ -657,58 +671,102 @@ margin-right: 8px;
     log.scrollTop = log.scrollHeight;
   }
 
-  async function deploy() {
-    const btn = document.getElementById('deployBtn');
+  async function deploy(count = 1) {
+    const btn1 = document.getElementById('deployBtn');
+    const btn100 = document.getElementById('deploy100Btn');
     const contract = CONTRACTS[selectedContract];
 
     document.getElementById('resultBox').classList.remove('visible');
     document.getElementById('deployLog').innerHTML = '';
     showLog();
 
-    btn.innerHTML = '<span class="spinner"></span>Deploying...';
-    btn.disabled = true;
+    const isBatch = count > 1;
+    btn1.disabled = true;
+    btn100.disabled = true;
+    btn100.innerHTML = isBatch ? '<span class="spinner"></span>Deploying...' : '🚀 Deploy 100 Contracts';
+    btn1.innerHTML = !isBatch ? '<span class="spinner"></span>Deploying...' : 'Deploy 1';
+
+    // Progress bar
+    const progressWrap = document.getElementById('progressWrap');
+    const progressBar = document.getElementById('progressBar');
+    const progressLabel = document.getElementById('progressLabel');
+    if (isBatch) {
+      progressWrap.style.display = 'block';
+      progressBar.style.width = '0%';
+      progressLabel.textContent = '0 / ' + count;
+    } else {
+      progressWrap.style.display = 'none';
+    }
 
     try {
-      logLine(`Preparing ${contract.name} contract...`, 'info');
-
       const net = await provider.getNetwork();
       const isBase = net.chainId === 8453n || net.chainId === 84532n;
       if (!isBase) {
         logLine('Please switch to Base network first.', 'err');
-        btn.textContent = 'Deploy to Base';
-        btn.disabled = false;
-        return;
+        resetBtns(count); return;
       }
 
-      logLine('Estimating gas...', 'info');
-
-      // Build transaction
-      const tx = await signer.sendTransaction({
-        data: contract.bytecode,
-      });
-
-      logLine('Transaction sent: ' + tx.hash.slice(0,12) + '...', 'info');
-      logLine('Waiting for confirmation...', 'info');
-
-      const receipt = await tx.wait();
-      const deployed = receipt.contractAddress;
-
-      logLine('Contract deployed successfully!', 'ok');
-      logLine('Address: ' + deployed, 'ok');
-
-      document.getElementById('resultAddr').textContent = deployed;
       const explorer = net.chainId === 8453n ? 'https://basescan.org' : 'https://sepolia.basescan.org';
-      const link = document.getElementById('resultLink');
-      link.href = `${explorer}/address/${deployed}`;
-      document.getElementById('resultBox').classList.add('visible');
+      let lastAddr = null;
+      let successCount = 0;
+      let failCount = 0;
 
-      btn.textContent = '✓ Deployed';
+      logLine(`Starting deployment of ${count} ${contract.name} contract${count > 1 ? 's' : ''}...`, 'info');
+
+      for (let i = 1; i <= count; i++) {
+        try {
+          const tx = await signer.sendTransaction({ data: contract.bytecode });
+          const receipt = await tx.wait();
+          lastAddr = receipt.contractAddress;
+          successCount++;
+
+          if (isBatch) {
+            const pct = (i / count) * 100;
+            progressBar.style.width = pct + '%';
+            progressLabel.textContent = i + ' / ' + count;
+            // Log every 10, plus first and last
+            if (i === 1 || i % 10 === 0 || i === count) {
+              logLine(`[${i}/${count}] Deployed: ${lastAddr.slice(0,10)}...`, 'ok');
+            }
+          } else {
+            logLine('Deployed: ' + lastAddr, 'ok');
+          }
+        } catch (e) {
+          failCount++;
+          logLine(`[${i}/${count}] Failed: ` + (e.reason || e.message || 'Unknown'), 'err');
+          // On single deploy, stop. On batch, continue.
+          if (!isBatch) { resetBtns(count); return; }
+        }
+      }
+
+      // Summary
+      if (isBatch) {
+        logLine(`Done! ${successCount} deployed, ${failCount} failed.`, successCount > 0 ? 'ok' : 'err');
+      }
+
+      if (lastAddr) {
+        document.getElementById('resultAddr').textContent =
+          isBatch ? `${successCount} contracts deployed. Last: ${lastAddr}` : lastAddr;
+        const link = document.getElementById('resultLink');
+        link.href = `${explorer}/address/${lastAddr}`;
+        link.textContent = isBatch ? 'View last contract on Basescan ↗' : 'View on Basescan ↗';
+        document.getElementById('resultBox').classList.add('visible');
+      }
 
     } catch (e) {
       logLine('Error: ' + (e.reason || e.message || 'Unknown error'), 'err');
-      btn.textContent = 'Deploy to Base';
-      btn.disabled = false;
     }
+
+    resetBtns(count);
+  }
+
+  function resetBtns(count) {
+    const btn1 = document.getElementById('deployBtn');
+    const btn100 = document.getElementById('deploy100Btn');
+    btn1.textContent = 'Deploy 1';
+    btn100.textContent = '🚀 Deploy 100 Contracts';
+    btn1.disabled = false;
+    btn100.disabled = false;
   }
 </script>
 
